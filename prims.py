@@ -1,10 +1,14 @@
-from gi.repository import GLib
+from gi.repository import Gtk, GLib, Gdk
 import random
+import threading
 import time
+Gdk.threads_init()
+GLib.threads_init()
 
-MAZE_SIZE = 70
+MAZE_SIZE = 75
 CELL_WIDTH = 4
 WALL_WIDTH = 4
+
 
 class PrimsPainter():
 
@@ -20,13 +24,15 @@ class PrimsPainter():
 
         self.last_cells = []
 
-        self.cells.append(dict(x=0, y=0))
-        self.last_cells.append(dict(x=0, y=0))
-        self._add_walls(dict(x=0, y=0))
+        half_size = MAZE_SIZE / 2
+        self.cells.append(dict(x=half_size, y=half_size))
+        self.last_cells.append(dict(x=half_size, y=half_size))
+        self._add_walls(dict(x=half_size, y=half_size))
 
         self.step_number = 0
 
-        GLib.idle_add(self._step)
+        self.finished = False
+        threading.Thread(target=self._step).start()
         GLib.timeout_add(100, self._draw)
 
     def draw(self, cr):
@@ -68,6 +74,11 @@ class PrimsPainter():
                 cr.rectangle(x1, y1, CELL_WIDTH*2+WALL_WIDTH, CELL_WIDTH)
         cr.fill()
 
+    def quit(self, window, event):
+        self.finished = False
+        time.sleep(0.5)
+        Gtk.main_quit()
+
     def _add_walls(self, cell):
         xn, yn = cell['x'], cell['y']+1
         xe, ye = cell['x']+1, cell['y']
@@ -84,6 +95,7 @@ class PrimsPainter():
         if 0 <= xw < MAZE_SIZE and 0 <= yw < MAZE_SIZE:
             cell_w = dict(x=xw, y=yw)
 
+        Gdk.threads_enter()
         if cell_n is not None:
             if (cell_n, cell) not in self.walls:
                 self.walls.append((cell, cell_n, random.randint(0, 1000)))
@@ -96,6 +108,7 @@ class PrimsPainter():
         if cell_w is not None:
             if (cell_w, cell) not in self.walls:
                 self.walls.append((cell, cell_w, random.randint(0, 1000)))
+        Gdk.threads_leave()
 
     def _get_smallest_wall(self):
         smallest_wall = self.walls[0]
@@ -105,18 +118,21 @@ class PrimsPainter():
         return smallest_wall
 
     def _step(self):
-        if len(self.walls) != 0:
+        while not self.finished:
             wall = self._get_smallest_wall()
             if wall[1] in self.cells:
+                Gdk.threads_enter()
                 self.walls.remove(wall)
+                Gdk.threads_leave()
             else:
+                Gdk.threads_enter()
                 self.walls.remove(wall)
                 self.edges.append(wall)
                 self.cells.append(wall[1])
+                Gdk.threads_leave()
                 self._add_walls(wall[1])
-            return True
-        else:
-            return False
+            if len(self.walls) == 0:
+                self.finished = True
 
     def _draw(self):
         self.darea.queue_draw()
