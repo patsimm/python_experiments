@@ -2,11 +2,11 @@ from gi.repository import GLib
 import random
 import time
 
-MAZE_SIZE = 70
-CELL_WIDTH = 4
-WALL_WIDTH = 4
+MAZE_SIZE = 100
+CELL_WIDTH = 3
+WALL_WIDTH = 5
 
-class PrimsPainter():
+class RandomTraversalPainter():
 
     def __init__(self, darea):
         self.darea = darea
@@ -86,31 +86,25 @@ class PrimsPainter():
 
         if cell_n is not None:
             if (cell_n, cell) not in self.walls:
-                self.walls.append((cell, cell_n, random.randint(0, 1000)))
+                self.walls.append((cell, cell_n))
         if cell_e is not None:
             if (cell_e, cell) not in self.walls:
-                self.walls.append((cell, cell_e, random.randint(0, 1000)))
+                self.walls.append((cell, cell_e))
         if cell_s is not None:
             if (cell_s, cell) not in self.walls:
-                self.walls.append((cell, cell_s, random.randint(0, 1000)))
+                self.walls.append((cell, cell_s))
         if cell_w is not None:
             if (cell_w, cell) not in self.walls:
-                self.walls.append((cell, cell_w, random.randint(0, 1000)))
-
-    def _get_smallest_wall(self):
-        smallest_wall = self.walls[0]
-        for wall in self.walls[1:]:
-            if wall[2] < smallest_wall[2]:
-                smallest_wall = wall
-        return smallest_wall
+                self.walls.append((cell, cell_w))
 
     def _step(self):
         if len(self.walls) != 0:
-            wall = self._get_smallest_wall()
+            random_index = random.randint(0, len(self.walls)-1)
+            wall = self.walls[random_index]
             if wall[1] in self.cells:
-                self.walls.remove(wall)
+                del self.walls[random_index]
             else:
-                self.walls.remove(wall)
+                del self.walls[random_index]
                 self.edges.append(wall)
                 self.cells.append(wall[1])
                 self._add_walls(wall[1])

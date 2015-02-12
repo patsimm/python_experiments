@@ -4,6 +4,7 @@ import time
 import pointer
 import prims
 
+
 def create():
     win = ColorWindow()
 
@@ -11,8 +12,9 @@ def create():
 class ColorWindow(Gtk.Window):
 
     def __init__(self):
-        super(ColorWindow, self).__init__()
+        Gtk.Window.__init__(self)
         self._init_ui()
+        self.set_resizable(False)
         Gtk.main()
 
     def _init_ui(self):
@@ -24,8 +26,7 @@ class ColorWindow(Gtk.Window):
         self.darea.connect("motion-notify-event", self.painter.motion)
         self.add(self.darea)
 
-        self.set_title("Fractals")
-        self.resize(500, 500)
+        self.set_title("Python Experiments")
         self.set_position(Gtk.WindowPosition.CENTER)
         self.connect("delete-event", Gtk.main_quit)
         self.show_all()
