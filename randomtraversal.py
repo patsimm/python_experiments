@@ -1,10 +1,10 @@
-from gi.repository import GLib
+from gi.repository import GLib, Gtk
 import random
 import time
 
 MAZE_SIZE = 100
-CELL_WIDTH = 3
-WALL_WIDTH = 5
+CELL_WIDTH = 4
+WALL_WIDTH = 4
 
 class RandomTraversalPainter():
 
@@ -20,9 +20,10 @@ class RandomTraversalPainter():
 
         self.last_cells = []
 
-        self.cells.append(dict(x=0, y=0))
-        self.last_cells.append(dict(x=0, y=0))
-        self._add_walls(dict(x=0, y=0))
+        half_size = MAZE_SIZE / 2
+        self.cells.append(dict(x=half_size, y=half_size))
+        self.last_cells.append(dict(x=half_size, y=half_size))
+        self._add_walls(dict(x=half_size, y=half_size))
 
         self.step_number = 0
 
@@ -60,13 +61,17 @@ class RandomTraversalPainter():
                 min_y = min(edge[0]['y'], edge[1]['y'])
                 y1 = min_y * (CELL_WIDTH + WALL_WIDTH) + WALL_WIDTH
                 cr.rectangle(x1, y1, CELL_WIDTH, CELL_WIDTH*2+WALL_WIDTH)
-                cr.fill()
             elif edge[0]['y'] == edge[1]['y']:
                 min_x = min(edge[0]['x'], edge[1]['x'])
                 x1 = min_x * (CELL_WIDTH + WALL_WIDTH) + WALL_WIDTH
                 y1 = edge[0]['y'] * (CELL_WIDTH + WALL_WIDTH) + WALL_WIDTH
                 cr.rectangle(x1, y1, CELL_WIDTH*2+WALL_WIDTH, CELL_WIDTH)
         cr.fill()
+
+    def quit(self, window, event):
+        self.finished = False
+        time.sleep(0.5)
+        Gtk.main_quit()
 
     def _add_walls(self, cell):
         xn, yn = cell['x'], cell['y']+1

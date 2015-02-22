@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 import controller
 
 if __name__ == "__main__":

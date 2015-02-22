@@ -3,6 +3,7 @@ import math
 import time
 import pointer
 import prims
+import randomtraversal
 
 
 def create():
@@ -20,9 +21,9 @@ class ColorWindow(Gtk.Window):
     def _init_ui(self):
         self.darea = Gtk.DrawingArea()
 
-        # self.painter = prims.PrimsPainter(self.darea)
+        self.painter = prims.PrimsPainter(self.darea)
         # self.painter = randomtraversal.RandomTraversalPainter(self.darea)
-        self.painter = pointer.PointerPainter(self.darea)
+        # self.painter = pointer.PointerPainter(self.darea)
 
         self.darea.connect("draw", self.on_draw)
         self.darea.set_events(Gdk.EventMask.POINTER_MOTION_MASK |

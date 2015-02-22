@@ -2,13 +2,13 @@ from gi.repository import Gtk, GLib, Gdk
 import random
 import threading
 import time
+import coloring
 Gdk.threads_init()
 GLib.threads_init()
 
-MAZE_SIZE = 75
+MAZE_SIZE = 100
 CELL_WIDTH = 4
-WALL_WIDTH = 4
-
+WALL_WIDTH = 0
 
 class PrimsPainter():
 
@@ -24,6 +24,8 @@ class PrimsPainter():
 
         self.last_cells = []
 
+        self.colored_edges = []
+
         half_size = MAZE_SIZE / 2
         self.cells.append(dict(x=half_size, y=half_size))
         self.last_cells.append(dict(x=half_size, y=half_size))
@@ -33,21 +35,15 @@ class PrimsPainter():
 
         self.finished = False
         threading.Thread(target=self._step).start()
-        GLib.timeout_add(100, self._draw)
+        GLib.timeout_add(1000, self._draw)
 
     def draw(self, cr):
         cr.set_source_rgb(0, 0, 0)
         width = (CELL_WIDTH + WALL_WIDTH) * MAZE_SIZE + WALL_WIDTH
         cr.rectangle(0, 0, width, width)
         cr.fill()
-        cr.set_source_rgb(0.5, 0.9, 0)
-        for cell in self.cells:
-            x1 = cell['x'] * (CELL_WIDTH + WALL_WIDTH) + WALL_WIDTH
-            y1 = cell['y'] * (CELL_WIDTH + WALL_WIDTH) + WALL_WIDTH
-            cr.rectangle(x1, y1, CELL_WIDTH, CELL_WIDTH)
-            cr.fill()
-        cr.set_source_rgb(0.75, 0, 0.75)
         for wall in self.walls:
+            cr.set_source_rgb(*coloring.green_to_red(wall[2]))
             if wall[0]['x'] == wall[1]['x']:
                 x1 = wall[0]['x'] * (CELL_WIDTH + WALL_WIDTH) + WALL_WIDTH
                 min_y = min(wall[0]['y'], wall[1]['y'])
@@ -58,7 +54,7 @@ class PrimsPainter():
                 x1 = (min_x + 1) * (CELL_WIDTH + WALL_WIDTH)
                 y1 = wall[0]['y'] * (CELL_WIDTH + WALL_WIDTH) + WALL_WIDTH
                 cr.rectangle(x1, y1, WALL_WIDTH, WALL_WIDTH)
-        cr.fill()
+            cr.fill()
         cr.set_source_rgb(1, 1, 1)
         for edge in self.edges:
             if edge[0]['x'] == edge[1]['x']:
@@ -66,13 +62,27 @@ class PrimsPainter():
                 min_y = min(edge[0]['y'], edge[1]['y'])
                 y1 = min_y * (CELL_WIDTH + WALL_WIDTH) + WALL_WIDTH
                 cr.rectangle(x1, y1, CELL_WIDTH, CELL_WIDTH*2+WALL_WIDTH)
-                cr.fill()
             elif edge[0]['y'] == edge[1]['y']:
                 min_x = min(edge[0]['x'], edge[1]['x'])
                 x1 = min_x * (CELL_WIDTH + WALL_WIDTH) + WALL_WIDTH
                 y1 = edge[0]['y'] * (CELL_WIDTH + WALL_WIDTH) + WALL_WIDTH
                 cr.rectangle(x1, y1, CELL_WIDTH*2+WALL_WIDTH, CELL_WIDTH)
         cr.fill()
+        for edge in self.colored_edges:
+            cr.set_source_rgb(*coloring.rainbow(edge[1]))
+            edge = edge[0]
+            if edge[0]['x'] == edge[1]['x']:
+                x1 = edge[0]['x'] * (CELL_WIDTH + WALL_WIDTH) + WALL_WIDTH
+                min_y = min(edge[0]['y'], edge[1]['y'])
+                y1 = min_y * (CELL_WIDTH + WALL_WIDTH) + WALL_WIDTH
+                cr.rectangle(x1, y1, CELL_WIDTH, CELL_WIDTH*2+WALL_WIDTH)
+            elif edge[0]['y'] == edge[1]['y']:
+                min_x = min(edge[0]['x'], edge[1]['x'])
+                x1 = min_x * (CELL_WIDTH + WALL_WIDTH) + WALL_WIDTH
+                y1 = edge[0]['y'] * (CELL_WIDTH + WALL_WIDTH) + WALL_WIDTH
+                cr.rectangle(x1, y1, CELL_WIDTH*2+WALL_WIDTH, CELL_WIDTH)
+            cr.fill()
+
 
     def quit(self, window, event):
         self.finished = False
@@ -98,16 +108,16 @@ class PrimsPainter():
         Gdk.threads_enter()
         if cell_n is not None:
             if (cell_n, cell) not in self.walls:
-                self.walls.append((cell, cell_n, random.randint(0, 1000)))
+                self.walls.append((cell, cell_n, random.randint(0, 359)))
         if cell_e is not None:
             if (cell_e, cell) not in self.walls:
-                self.walls.append((cell, cell_e, random.randint(0, 1000)))
+                self.walls.append((cell, cell_e, random.randint(0, 359)))
         if cell_s is not None:
             if (cell_s, cell) not in self.walls:
-                self.walls.append((cell, cell_s, random.randint(0, 1000)))
+                self.walls.append((cell, cell_s, random.randint(0, 359)))
         if cell_w is not None:
             if (cell_w, cell) not in self.walls:
-                self.walls.append((cell, cell_w, random.randint(0, 1000)))
+                self.walls.append((cell, cell_w, random.randint(0, 359)))
         Gdk.threads_leave()
 
     def _get_smallest_wall(self):
@@ -133,6 +143,19 @@ class PrimsPainter():
                 self._add_walls(wall[1])
             if len(self.walls) == 0:
                 self.finished = True
+        self.finished = False
+        step = 0
+        while not self.finished:
+            for cell in self.last_cells[:]:
+                self.last_cells.remove(cell)
+                for edge in self.edges:
+                    if edge[0] == cell:
+                        self.colored_edges.append((edge, step))
+                        self.last_cells.append(edge[1])
+            if len(self.last_cells) == 0:
+                self.finished = True
+            time.sleep(0.01)
+            step += 1
 
     def _draw(self):
         self.darea.queue_draw()
